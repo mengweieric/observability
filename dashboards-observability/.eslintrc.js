@@ -10,10 +10,11 @@ module.exports = {
     "eslint:recommended",
     'plugin:@elastic/eui/recommended'
   ],
-  "overrides": [
+  ignorePatterns: ["test/**", ".cypress/**", "node_modules/**"],
+  overrides: [
     {
-      "files": ["*.js", "*.jsx", "*.ts", "*.tsx"],
-      "excludedFiles": "*.test.js",
+      "files": ['*.ts', '*.tsx', '*.js', '*.jsx'],
+      "excludedFiles": "*.test.js"
     }
   ]
 };
