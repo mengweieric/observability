@@ -49,3 +49,5 @@ jobs:
 
       - name: linting
         run: yarn lint
+        with: 
+          directory: ./OpenSearch-Dashboards/plugins/dashboards-observability
