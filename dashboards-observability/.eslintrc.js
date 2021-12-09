@@ -11,10 +11,4 @@ module.exports = {
     'plugin:@elastic/eui/recommended'
   ],
   ignorePatterns: ["test/**", ".cypress/**", "node_modules/**"],
-  overrides: [
-    {
-      "files": ['*.ts', '*.tsx', '*.js', '*.jsx'],
-      "excludedFiles": "*.test.js"
-    }
-  ]
 };
