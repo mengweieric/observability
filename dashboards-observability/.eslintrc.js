@@ -4,11 +4,5 @@
  */
 
 module.exports = {
-  root: false,
-  extends: [
-    '@elastic/eslint-config-kibana',
-    "eslint:recommended",
-    'plugin:@elastic/eui/recommended'
-  ],
-  ignorePatterns: ["test/**", ".cypress/**", "node_modules/**"],
+  root: false
 };
