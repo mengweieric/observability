@@ -4,5 +4,6 @@
  */
 
 module.exports = {
-  root: false
+  root: false,
+  extends: ['plugin:react-hooks/recommended']
 };
