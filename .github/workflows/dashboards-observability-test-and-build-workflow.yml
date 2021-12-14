@@ -51,6 +51,11 @@ jobs:
           cd OpenSearch-Dashboards/plugins/dashboards-observability
           yarn osd bootstrap
 
+      - name: Linting
+        run: |
+          cd OpenSearch-Dashboards/plugins/dashboards-observability
+          yarn lint
+
       # TODO enable unit tests when ready
       - name: Test Panels
         run: |
