@@ -10,5 +10,21 @@ module.exports = {
     'plugin:@elastic/eui/recommended',
     'plugin:react-hooks/recommended',
   ],
+  overrides: [
+    {
+      "files": [
+        "public/**",
+        "server/**",
+        "common/**"
+      ],
+      "excludedFiles": [
+        "*.spec.js",
+        "*.test.ts",
+        "*.test.tsx",
+        "*.test.js",
+        "*.test.jsx"
+      ]
+    }
+  ]
 };
 
