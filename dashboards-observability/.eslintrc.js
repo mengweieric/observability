@@ -4,7 +4,7 @@
  */
 
 module.exports = {
-  root: false,
+  root: true,
   extends: [
     '@elastic/eslint-config-kibana',
     'plugin:@elastic/eui/recommended',
