@@ -4,7 +4,7 @@
  */
 
 module.exports = {
-  root: false,
+  root: true,
   extends: [
     '@elastic/eslint-config-kibana',
     'plugin:@elastic/eui/recommended',
@@ -13,9 +13,10 @@ module.exports = {
   overrides: [
     {
       "files": [
-        "public/**",
-        "server/**",
-        "common/**"
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.js",
+        "**/*.jsx"
       ],
       "excludedFiles": [
         "*.spec.js",
