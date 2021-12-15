@@ -13,10 +13,10 @@ module.exports = {
   overrides: [
     {
       "files": [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.js",
-        "**/*.jsx"
+        "../**/*.ts",
+        "../**/*.tsx",
+        "../**/*.js",
+        "../**/*.jsx"
       ],
       "excludedFiles": [
         "*.config.js",
