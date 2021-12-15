@@ -48,7 +48,7 @@ import { addTab, selectQueryTabs } from './slices/query_tab_slice';
 import { init as initFields } from './slices/field_slice';
 import { init as initQuery, changeQuery } from './slices/query_slice';
 import { init as initQueryResult, selectQueryResult } from './slices/query_result_slice';
-import { Histories as EventHomeHistories } from './home_table/history_table';
+import { SavedQueryTable } from './home_table/saved_query_table';
 import { selectQueries } from './slices/query_slice';
 import { setSelectedQueryTab } from './slices/query_tab_slice';
 import { DeletePanelModal } from '../custom_panels/helpers/modal_containers';
@@ -277,6 +277,7 @@ export const Home = (props: IHomeProps) => {
       iconType="arrowDown"
       iconSide="right"
       onClick={() => setIsActionsPopoverOpen(!isActionsPopoverOpen)}
+      data-test-subj="eventHomeAction"
     >
       Actions
     </EuiButton>
@@ -303,6 +304,7 @@ export const Home = (props: IHomeProps) => {
         setIsActionsPopoverOpen(false);
         deleteHistory();
       }}
+      data-test-subj="eventHomeAction__delete"
     >
       Delete
     </EuiContextMenuItem>,
@@ -312,6 +314,7 @@ export const Home = (props: IHomeProps) => {
         setIsActionsPopoverOpen(false);
         history.push(`/event_analytics/explorer`);
       }}
+      data-test-subj="eventHomeAction__explorer"
     >
       Event Explorer
     </EuiContextMenuItem>,
@@ -321,6 +324,7 @@ export const Home = (props: IHomeProps) => {
         setIsActionsPopoverOpen(false);
         addSampledata();
       }}
+      data-test-subj="eventHomeAction__addSamples"
     >
       Add samples
     </EuiContextMenuItem>,
@@ -388,6 +392,7 @@ export const Home = (props: IHomeProps) => {
                       button={popoverButton}
                       isOpen={isActionsPopoverOpen}
                       closePopover={() => setIsActionsPopoverOpen(false)}
+                      // data-test-subj="eventHomeAction__popover"
                     >
                       <EuiContextMenuPanel items={popoverItems} />
                     </EuiPopover>
@@ -399,7 +404,7 @@ export const Home = (props: IHomeProps) => {
             <EuiFlexGroup>
               <EuiFlexItem grow={true}>
                 {savedHistories.length > 0 ? (
-                  <EventHomeHistories
+                  <SavedQueryTable
                     savedHistories={savedHistories}
                     handleHistoryClick={handleHistoryClick}
                     isTableLoading={isTableLoading}
@@ -424,12 +429,17 @@ export const Home = (props: IHomeProps) => {
                         <EuiButton
                           fullWidth={false}
                           onClick={() => history.push(`/event_analytics/explorer`)}
+                          data-test-subj="actionEventExplorer"
                         >
                           Event Explorer
                         </EuiButton>
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>
-                        <EuiButton fullWidth={false} onClick={() => addSampledata()}>
+                        <EuiButton 
+                          fullWidth={false}
+                          onClick={() => addSampledata()}
+                          data-test-subj="actionAddSamples"
+                        >
                           Add samples
                         </EuiButton>
                       </EuiFlexItem>
