@@ -62,7 +62,7 @@ describe('<Notebook /> spec', () => {
       />
     );
     await waitFor(() => {
-      expect(utils.container.firstChild).toMatchSnapshot();
+      expect(utils).toMatchSnapshot();
     });
 
     utils.getByText('Add code block').click();
