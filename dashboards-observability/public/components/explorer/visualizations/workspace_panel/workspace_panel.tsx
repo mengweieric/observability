@@ -3,17 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useContext, useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import { find } from 'lodash';
-import { WorkspacePanelWrapper } from './workspace_panel_wrapper';
-import { TabContext } from '../../hooks';
-import {
-  selectVisualizationConfig,
-  change as changeVisualizationConfig,
-} from '../../slices/viualization_config_slice';
-import { getVisType } from '../../../visualizations/charts/vis_types';
+import React, { useState, useMemo } from 'react';
+import { isEmpty } from 'lodash';
+import { EuiPanel, EuiFlexGroup, EuiFlexItem, EuiSwitch, EuiSpacer } from '@elastic/eui';
 import { Visualization } from '../../../visualizations/visualization';
+import { DataTable } from '../../../visualizations/charts/data_table/data_table';
 
 interface IWorkSpacePanel {
   curVisId: string;
@@ -21,74 +15,52 @@ interface IWorkSpacePanel {
   visualizations: any;
 }
 
-const ENABLED_VIS_TYPES = [
-  'bar',
-  'horizontal_bar',
-  'line',
-  'pie',
-  'histogram',
-  'bubble',
-  'heatmap',
-];
-
-export function WorkspacePanel({ curVisId, setCurVisId, visualizations }: IWorkSpacePanel) {
-  const { tabId, dispatch } = useContext(TabContext);
-  const [savePanelName, setSavePanelName] = useState<string>('');
-  const customVizConfigs = useSelector(selectVisualizationConfig)[tabId];
-
-  const handleDispatch = useCallback(
-    (evtData) => {
-      dispatch(
-        changeVisualizationConfig({
-          tabId,
-          data: {
-            ...evtData,
-          },
-        })
-      );
-    },
-    [dispatch, tabId]
-  );
-
-  const memorizedVisualizationTypes = useMemo(() => {
-    return ENABLED_VIS_TYPES.map((vis: any) => {
-      const visDefinition = getVisType(vis);
-      const subTypes = visDefinition.subTypes;
-      return {
-        ...subTypes[vis],
-        chart: visDefinition.component,
-      };
-    });
-  }, []);
-
-  const getVisDefById = useCallback(
-    (visId) => {
-      return find(memorizedVisualizationTypes, (v) => {
-        return v.id === visId;
-      });
-    },
-    [memorizedVisualizationTypes]
-  );
-
+export function WorkspacePanel({ visualizations }: IWorkSpacePanel) {
+  const [isTableViewOn, setIsTableViewOn] = useState(false);
   const VisualizationPanel = useMemo(() => {
-    const visDef = getVisDefById(curVisId);
-    visDef.dispatch = handleDispatch;
-    return <Visualization vis={visDef} visData={visualizations} />;
-  }, [curVisId, visualizations, handleDispatch, getVisDefById]);
+    return <Visualization visualizations={visualizations} />;
+  }, [visualizations]);
 
   return (
-    <WorkspacePanelWrapper
-      title={''}
-      emptyExpression={true}
-      setVis={setCurVisId}
-      vis={getVisDefById(curVisId)}
-      visualizationTypes={memorizedVisualizationTypes}
-      handleSavePanelNameChange={(name: string) => {
-        setSavePanelName(name);
-      }}
-      savePanelName={savePanelName}
-    >
-      {VisualizationPanel}
-    </WorkspacePanelWrapper>
+    <>
+      <EuiFlexGroup
+        className="visEditorSidebar"
+        direction="column"
+        justifyContent="spaceBetween"
+        gutterSize="none"
+        responsive={false}
+      >
+        <EuiFlexItem>
+          <EuiSpacer size="s" />
+          <EuiFlexGroup
+            className="visEditorSidebar"
+            direction="rowReverse"
+            gutterSize="none"
+            responsive={false}
+          >
+            <EuiFlexItem grow={false}>
+              <EuiPanel paddingSize="s">
+                <EuiSwitch
+                  label="Table view"
+                  disabled={isEmpty(visualizations?.data?.rawVizData)}
+                  checked={isTableViewOn}
+                  onChange={() => {
+                    setIsTableViewOn((staleState) => !staleState);
+                  }}
+                  aria-describedby={'table view switcher'}
+                  compressed
+                />
+              </EuiPanel>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+          <EuiSpacer size="s" />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <EuiPanel paddingSize="s">
+            {isTableViewOn ? <DataTable visualizations={visualizations} /> : VisualizationPanel}
+          </EuiPanel>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    </>
   );
 }

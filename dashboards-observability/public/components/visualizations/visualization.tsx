@@ -9,13 +9,13 @@ import { EmptyPlaceholder } from '../../components/explorer/visualizations/share
 
 interface IVisualizationProps {}
 
-export const Visualization = ({ vis, visData }: IVisualizationProps) => {
+export const Visualization = ({ visualizations }: IVisualizationProps) => {
   return (
     <>
-      {visData && visData.data ? (
-        <VisualizationChart vis={vis} visData={visData} />
+      {visualizations?.data?.rawVizData?.size ? (
+        <VisualizationChart visualizations={visualizations} />
       ) : (
-        <EmptyPlaceholder icon={vis.icon} />
+        <EmptyPlaceholder icon={visualizations?.vis?.icon} />
       )}
     </>
   );

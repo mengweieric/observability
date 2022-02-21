@@ -4,91 +4,58 @@
  */
 
 import React from 'react';
-import { take, merge, isEmpty } from 'lodash';
+import { uniq, chunk, zip } from 'lodash';
 import { Plt } from '../../plotly/plot';
 import { PLOTLY_COLOR } from '../../../../../common/constants/shared';
 
-export const HeatMap = ({
-  visualizations,
-  figureConfig = {},
-  layoutConfig = {},
-  dispatch,
-  customVizData = {},
-}: any) => {
+export const HeatMap = ({ visualizations, layout, config }: any) => {
   const {
     data,
     metadata: { fields },
-  } = visualizations;
-  // const lineLength = fields.length - 1;
-  // // let lineValues;
-  // // if (isEmpty(customVizData)) {
-  // const lineValues = take(fields, lineLength).map((field: any) => {
-  //   return {
-  //     values: data[field.name],
-  //     labels: data[fields[lineLength].name],
-  //     type: 'heatmap',
-  //     name: field.name,
-  //   };
-  // });
-  // } else {
-  //   lineValues = [...customVizData];
-  // }
+  } = visualizations.data.rawVizData;
+  const { dataConfig = {} } = visualizations?.data?.userConfigs;
+
+  const xaxisField = fields[fields.length - 2];
+  const yaxisField = fields[fields.length - 1];
+  const zMetrics =
+    dataConfig?.valueOptions && dataConfig?.valueOptions.zaxis
+      ? dataConfig?.valueOptions.zaxis[0]
+      : fields[fields.length - 3];
+  const uniqueYaxis = uniq(data[yaxisField.name]);
+  const uniqueXaxis = uniq(data[xaxisField.name]);
+  const uniqueYaxisLength = uniqueYaxis.length;
+  const uniqueXaxisLength = uniqueXaxis.length;
+  const heapMapZaxis = [];
+  const buckets = {};
+
+  for (let i = 0; i < data[xaxisField.name].length; i++) {
+    buckets[`${data[xaxisField.name][i]},${data[yaxisField.name][i]}`] = data[zMetrics.name][i];
+  }
+
+  for (let i = 0; i < uniqueYaxisLength; i++) {
+    const innerBuckets = [];
+    for (let j = 0; j < uniqueXaxisLength; j++) {
+      innerBuckets.push(null);
+    }
+    heapMapZaxis.push(innerBuckets);
+  }
+
+  for (let i = 0; i < uniqueYaxisLength; i++) {
+    for (let j = 0; j < uniqueXaxisLength; j++) {
+      if (buckets[`${uniqueXaxis[j]},${uniqueYaxis[i]}`]) {
+        heapMapZaxis[i][j] = buckets[`${uniqueXaxis[j]},${uniqueYaxis[i]}`];
+      }
+    }
+  }
 
   const heapMapData = [
     {
-      z: [
-        [35, 65, 3, 55, 13],
-        [44, 68, 9, 57, 3],
-        [29, 17, 25, 61, 5],
-      ],
-      x: [
-        '2022-01-21 00:00:00',
-        '2022-01-22 00:00:00',
-        '2022-01-23 00:00:00',
-        '2022-01-24 00:00:00',
-        '2022-01-25 00:00:00',
-      ],
-      y: [
-        'www.opensearch.org',
-        'cdn.opensearch-opensearch-opensearch.org',
-        'artifacts.opensearch.org',
-      ],
+      z: heapMapZaxis,
+      x: uniqueXaxis,
+      y: uniqueYaxis,
       type: 'heatmap',
     },
   ];
 
-  const config = {
-    // barmode: 'pie',
-    xaxis: {
-      automargin: true,
-    },
-    yaxis: {
-      automargin: true,
-    },
-  };
-  const lineLayoutConfig = merge(config, layoutConfig);
-
-  return (
-    <Plt
-      data={heapMapData}
-      layout={{
-        colorway: PLOTLY_COLOR,
-        plot_bgcolor: 'rgba(0, 0, 0, 0)',
-        paper_bgcolor: 'rgba(0, 0, 0, 0)',
-        xaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        yaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        ...lineLayoutConfig,
-      }}
-      config={figureConfig}
-      dispatch={dispatch}
-    />
-  );
+  return <Plt data={heapMapData} layout={layout} config={config} />;
 };

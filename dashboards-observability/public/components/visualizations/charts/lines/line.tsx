@@ -4,68 +4,67 @@
  */
 
 import React from 'react';
-import { take, merge, isEmpty } from 'lodash';
+import { take, isEmpty, last } from 'lodash';
 import { Plt } from '../../plotly/plot';
-import { PLOTLY_COLOR } from '../../../../../common/constants/shared';
 
-export const Line = ({
-  visualizations,
-  figureConfig = {},
-  layoutConfig = {},
-  dispatch,
-  customVizData = {},
-}: any) => {
+export const Line = ({ visualizations, layout, config }: any) => {
   const {
-    data,
+    data = {},
     metadata: { fields },
-  } = visualizations;
-  const lineLength = fields.length - 1;
-  let lineValues;
-  if (isEmpty(customVizData)) {
-    lineValues = take(fields, lineLength).map((field: any) => {
-      return {
-        x: data[fields[lineLength].name],
-        y: data[field.name],
-        type: 'line',
-        name: field.name,
-      };
-    });
+  } = visualizations.data.rawVizData;
+  const { vis } = visualizations;
+  const { defaultAxes } = visualizations.data;
+  const { dataConfig = {} } = visualizations?.data?.userConfigs;
+  const xaxis =
+    dataConfig?.valueOptions && dataConfig?.valueOptions.xaxis
+      ? dataConfig?.valueOptions.xaxis
+      : [];
+  const yaxis =
+    dataConfig?.valueOptions && dataConfig?.valueOptions.xaxis
+      ? dataConfig?.valueOptions.yaxis
+      : [];
+  const lastIndex = fields.length - 1;
+
+  let valueSeries;
+  if (!isEmpty(xaxis) && !isEmpty(yaxis)) {
+    valueSeries = [...yaxis];
   } else {
-    lineValues = [...customVizData];
+    valueSeries = defaultAxes.yaxis || take(fields, lastIndex > 0 ? lastIndex : 1);
   }
 
-  const config = {
-    barmode: 'line',
-    xaxis: {
-      automargin: true,
-    },
-    yaxis: {
-      automargin: true,
-    },
-  };
-  const lineLayoutConfig = merge(config, layoutConfig);
+  const lineValues = valueSeries.map((field: any) => {
+    return {
+      x: data[!isEmpty(xaxis) ? xaxis[0]?.label : fields[lastIndex].name],
+      y: data[field.name],
+      text: dataConfig.thresholds ? dataConfig.thresholds.map((thr) => thr.name) : [],
+      type: 'line',
+      name: field.name,
+    };
+  });
 
-  return (
-    <Plt
-      data={lineValues}
-      layout={{
-        colorway: PLOTLY_COLOR,
-        plot_bgcolor: 'rgba(0, 0, 0, 0)',
-        paper_bgcolor: 'rgba(0, 0, 0, 0)',
-        xaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        yaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        ...lineLayoutConfig,
-      }}
-      config={figureConfig}
-      dispatch={dispatch}
-    />
-  );
+  const finalLayout = {
+    ...layout,
+  };
+
+  // threshold(s)
+  if (dataConfig.thresholds) {
+    finalLayout.shapes = [
+      ...dataConfig.thresholds.map((thr) => {
+        return {
+          type: 'line',
+          x0: data[!isEmpty(xaxis) ? xaxis[0]?.label : fields[lastIndex].name][0],
+          y0: thr.value,
+          x1: last(data[!isEmpty(xaxis) ? xaxis[0]?.label : fields[lastIndex].name]),
+          y1: thr.value,
+          line: {
+            color: thr.color,
+            width: 4,
+            dash: 'dashdot',
+          },
+        };
+      }),
+    ];
+  }
+
+  return <Plt data={lineValues} layout={finalLayout} config={config} />;
 };

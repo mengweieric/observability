@@ -8,59 +8,35 @@ import { take, merge, isEmpty } from 'lodash';
 import { Plt } from '../../plotly/plot';
 import { PLOTLY_COLOR } from '../../../../../common/constants/shared';
 
-export const Histogram = ({
-  visualizations,
-  figureConfig = {},
-  layoutConfig = {},
-  dispatch,
-  customVizData = {},
-}: any) => {
+export const Histogram = ({ visualizations, layout, config }: any) => {
+  const { vis } = visualizations;
   const {
-    data,
+    data = {},
     metadata: { fields },
-  } = visualizations;
-  const lineLength = fields.length - 1;
-  const lineValues = take(fields, lineLength).map((field: any) => {
+  } = visualizations.data.rawVizData;
+  const { defaultAxes } = visualizations.data.defaultAxes;
+  const { xaxis = null, yaxis = null } = visualizations.data.userConfigs;
+  const lastIndex = fields.length - 1;
+
+  let valueSeries;
+  if (!isEmpty(xaxis) && !isEmpty(yaxis)) {
+    valueSeries = [
+      ...visualizations?.data?.userConfigs[vis.seriesAxis].map((item) => ({
+        ...item,
+        name: item.label,
+      })),
+    ];
+  } else {
+    valueSeries = defaultAxes?.yaxis || take(fields, lastIndex > 0 ? lastIndex : 1);
+  }
+
+  const hisValues = valueSeries.map((field: any) => {
     return {
-      // x: data[fields[lineLength].name],
-      y: data[field.name],
+      x: data[xaxis ? xaxis[0]?.label : fields[lastIndex].name],
       type: 'histogram',
       name: field.name,
     };
   });
 
-  const config = {
-    barmode: 'line',
-    xaxis: {
-      automargin: true,
-    },
-    yaxis: {
-      automargin: true,
-    },
-  };
-  const lineLayoutConfig = merge(config, layoutConfig);
-
-  return (
-    <Plt
-      data={lineValues}
-      layout={{
-        colorway: PLOTLY_COLOR,
-        plot_bgcolor: 'rgba(0, 0, 0, 0)',
-        paper_bgcolor: 'rgba(0, 0, 0, 0)',
-        xaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        yaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        ...lineLayoutConfig,
-      }}
-      config={figureConfig}
-      dispatch={dispatch}
-    />
-  );
+  return <Plt data={hisValues} layout={layout} config={config} />;
 };

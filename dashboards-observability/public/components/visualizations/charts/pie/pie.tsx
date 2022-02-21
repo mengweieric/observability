@@ -8,64 +8,39 @@ import { take, merge, isEmpty } from 'lodash';
 import { Plt } from '../../plotly/plot';
 import { PLOTLY_COLOR } from '../../../../../common/constants/shared';
 
-export const Pie = ({
-  visualizations,
-  figureConfig = {},
-  layoutConfig = {},
-  dispatch,
-  customVizData = {},
-}: any) => {
+export const Pie = ({ visualizations, layout, config }: any) => {
+  const { vis } = visualizations;
   const {
     data,
     metadata: { fields },
-  } = visualizations;
-  const lineLength = fields.length - 1;
-  // let lineValues;
-  // if (isEmpty(customVizData)) {
-  const lineValues = take(fields, lineLength).map((field: any) => {
+  } = visualizations.data.rawVizData;
+  const { defaultAxes } = visualizations.data;
+  const { dataConfig = {} } = visualizations?.data?.userConfigs;
+  const xaxis =
+    dataConfig?.valueOptions && dataConfig?.valueOptions.xaxis
+      ? dataConfig?.valueOptions.xaxis
+      : [];
+  const yaxis =
+    dataConfig?.valueOptions && dataConfig?.valueOptions.xaxis
+      ? dataConfig?.valueOptions.yaxis
+      : [];
+  const lastIndex = fields.length - 1;
+
+  let valueSeries;
+  if (!isEmpty(xaxis) && !isEmpty(yaxis)) {
+    valueSeries = [...yaxis];
+  } else {
+    valueSeries = defaultAxes.yaxis || take(fields, lastIndex > 0 ? lastIndex : 1);
+  }
+
+  const pies = valueSeries.map((field: any) => {
     return {
+      labels: data[xaxis ? xaxis[0]?.label : fields[lastIndex].name],
       values: data[field.name],
-      labels: data[fields[lineLength].name],
       type: 'pie',
       name: field.name,
     };
   });
-  // } else {
-  //   lineValues = [...customVizData];
-  // }
 
-  const config = {
-    barmode: 'pie',
-    xaxis: {
-      automargin: true,
-    },
-    yaxis: {
-      automargin: true,
-    },
-  };
-  const lineLayoutConfig = merge(config, layoutConfig);
-
-  return (
-    <Plt
-      data={lineValues}
-      layout={{
-        colorway: PLOTLY_COLOR,
-        plot_bgcolor: 'rgba(0, 0, 0, 0)',
-        paper_bgcolor: 'rgba(0, 0, 0, 0)',
-        xaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        yaxis: {
-          fixedrange: true,
-          showgrid: false,
-          visible: true,
-        },
-        ...lineLayoutConfig,
-      }}
-      config={figureConfig}
-      dispatch={dispatch}
-    />
-  );
+  return <Plt data={pies} layout={layout} config={config} />;
 };

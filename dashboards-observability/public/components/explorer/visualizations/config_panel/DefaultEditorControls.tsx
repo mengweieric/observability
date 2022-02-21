@@ -13,7 +13,12 @@ import {
   EuiToolTip,
 } from '@elastic/eui';
 
-export const DefaultEditorControls = ({ isInvalid, isDirty }: any) => {
+export const DefaultEditorControls = ({
+  isInvalid,
+  isDirty,
+  onConfigUpdate,
+  onConfigDiscard,
+}: any) => {
   return (
     <div className="visEditorSidebar__controls">
       <EuiFlexGroup justifyContent="spaceBetween" gutterSize="none" responsive={false}>
@@ -22,17 +27,17 @@ export const DefaultEditorControls = ({ isInvalid, isDirty }: any) => {
             data-test-subj="visualizeEditorResetButton"
             disabled={!isDirty}
             iconType="cross"
-            onClick={() => {}}
+            onClick={onConfigDiscard}
             size="s"
           >
-            Discard
+            Reset
           </EuiButtonEmpty>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           {isInvalid ? (
             <EuiToolTip content={'Errors in the highlighted fields need to be resolved.'}>
               <EuiButton color="danger" iconType="alert" size="s" disabled>
-                Update
+                Apply
               </EuiButton>
             </EuiToolTip>
           ) : (
@@ -41,10 +46,10 @@ export const DefaultEditorControls = ({ isInvalid, isDirty }: any) => {
               disabled={!isDirty}
               fill
               iconType="play"
-              onClick={() => {}}
+              onClick={onConfigUpdate}
               size="s"
             >
-              Update
+              Apply
             </EuiButton>
           )}
         </EuiFlexItem>
