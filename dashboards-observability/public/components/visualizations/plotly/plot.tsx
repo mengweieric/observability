@@ -17,6 +17,7 @@ interface PltProps {
   onClickHandler?: (event: Readonly<Plotly.PlotMouseEvent>) => void;
   height?: string;
   dispatch?: (props: any) => void;
+  divId?: string;
 }
 
 export function Plt(props: PltProps) {
@@ -67,8 +68,11 @@ export function Plt(props: PltProps) {
     ...props.config,
   };
 
+  console.log('inner layout: ', finalLayout);
+
   return (
     <PlotComponent
+      divId={props.divId || 'default_plotly'}
       data={props.data}
       style={{ width: '100%', height: props.height || '100%' }}
       onHover={props.onHoverHandler}
