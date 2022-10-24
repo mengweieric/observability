@@ -27,7 +27,22 @@ export function registerPplRoute({
     validate: { 
       body: schema.object({
         query: schema.string(),
-        format: schema.string()
+        format: schema.string(),
+        vizmetadata: schema.maybe(schema.object({
+          type: schema.string(),
+          dimensions: schema.arrayOf(schema.object({
+            name: schema.string(),
+            type: schema.string()
+          })),
+          series: schema.arrayOf(schema.object({
+            name: schema.string(),
+            type: schema.string()
+          })),
+          breakdowns: schema.arrayOf(schema.object({
+            name: schema.string(),
+            type: schema.string()
+          }))
+        }))
     })}
   }, 
   async (

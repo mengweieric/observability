@@ -3,26 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import _ from 'lodash';
-import {
-  IPPLEventsDataSource,
-  IPPLVisualizationDataSource
-} from '../common/types';
+import { isEmpty, forEach } from 'lodash';
+import { IPPLEventsDataSource, IPPLVisualizationDataSource } from '../common/types';
+import { VisualizationRenderer as PPLVisualizationRenderer } from '../services/visualizations';
 
 type PPLResponse = IPPLEventsDataSource & IPPLVisualizationDataSource;
 
 export class PPLDataSource {
-
-  constructor(
-    private pplDataSource: PPLResponse,
-    private dataType: string
-  ) {
-    if (this.dataType === 'jdbc') {
+  constructor(private pplDataSource: PPLResponse, private request: any) {
+    const dataType = request.body.format;
+    if (dataType === 'jdbc') {
       this.addSchemaRowMapping();
-    } else if (this.dataType === 'viz') {
+    } else if (dataType === 'viz') {
       this.addStatsMapping();
+      if (!isEmpty(request.body.vizmetadata)) {
+        this.renderVisualization(request.body);
+      }
     }
   }
+
+  private renderVisualization = ({ vizmetadata }) => {
+    const visData = { ...this.pplDataSource };
+    const res = this.pplDataSource;
+    res['visualizations'] = new PPLVisualizationRenderer(visData, vizmetadata).render();
+  };
 
   private addStatsMapping = () => {
     const visData = this.pplDataSource;
@@ -42,7 +46,7 @@ export class PPLDataSource {
      *  agent: "chrome",
      *  avg(bytes): 5648
      *  ...
-     * }] 
+     * }]
      */
     let res = [];
     if (visData?.metadata?.fields) {
@@ -57,27 +61,25 @@ export class PPLDataSource {
       }
       visData['jsonData'] = res;
     }
-  }
+  };
 
   /**
    * Add 'schemaName: data' entries for UI rendering
    */
   private addSchemaRowMapping = () => {
-    
     const pplRes = this.pplDataSource;
-    
+
     const data: any[] = [];
 
-    _.forEach(pplRes.datarows, (row) => {
+    forEach(pplRes.datarows, (row) => {
       const record: any = {};
-      
+
       for (let i = 0; i < pplRes.schema.length; i++) {
-        
         const cur = pplRes.schema[i];
-        
-        if (typeof(row[i]) === 'object') {
+
+        if (typeof row[i] === 'object') {
           record[cur.name] = JSON.stringify(row[i]);
-        } else if (typeof(row[i]) === 'boolean') {
+        } else if (typeof row[i] === 'boolean') {
           record[cur.name] = row[i].toString();
         } else {
           record[cur.name] = row[i];
@@ -89,5 +91,5 @@ export class PPLDataSource {
     pplRes['jsonData'] = data;
   };
 
-  public getDataSource = () : PPLResponse => this.pplDataSource;
+  public getDataSource = (): PPLResponse => this.pplDataSource;
 }
