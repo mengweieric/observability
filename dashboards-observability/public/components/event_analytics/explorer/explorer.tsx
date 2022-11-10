@@ -962,7 +962,7 @@ export const Explorer = ({
                         rowsAll={explorerData.jsonDataAll}
                         explorerFields={explorerFields}
                         timeStampField={queryRef.current![SELECTED_TIMESTAMP]}
-                        rawQuery={queryRef.current![RAW_QUERY]}
+                        rawQuery={appBasedRef.current || queryRef.current![RAW_QUERY]}
                       />
                       <a tabIndex={0} id="discoverBottomMarker">
                         &#8203;
