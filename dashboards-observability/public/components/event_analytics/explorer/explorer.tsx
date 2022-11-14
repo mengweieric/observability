@@ -212,7 +212,7 @@ export const Explorer = ({
     const momentStart = dateMath.parse(start)!;
     const momentEnd = dateMath.parse(end, { roundUp: true })!;
     const diffSeconds = momentEnd.unix() - momentStart.unix();
-    let minInterval = 'y'
+    let minInterval = 'y';
 
     // less than 1 second
     if (diffSeconds <= 1) minInterval = 'ms';
@@ -233,7 +233,7 @@ export const Explorer = ({
       { text: 'Auto', value: 'auto_' + minInterval },
       ...TIME_INTERVAL_OPTIONS,
     ]);
-    selectedIntervalRef.current = ({ text: 'Auto', value: 'auto_' + minInterval })
+    selectedIntervalRef.current = { text: 'Auto', value: 'auto_' + minInterval };
   };
 
   useEffect(() => {
@@ -453,7 +453,7 @@ export const Explorer = ({
       // to fetch patterns data on current query
       if (!finalQuery.match(PATTERNS_REGEX)) {
         getPatterns(selectedIntervalRef.current!.value.replace(/^auto_/, ''));
-      }  
+      }
     }
 
     // for comparing usage if for the same tab, user changed index from one to another
@@ -747,10 +747,13 @@ export const Explorer = ({
                             dateFormat={'MMM D, YYYY @ HH:mm:ss.SSS'}
                             options={timeIntervalOptions}
                             onChangeInterval={(selectedIntrv) => {
-                              const intervalOptionsIndex = timeIntervalOptions.findIndex(item => item.value === selectedIntrv)
-                              const intrv = selectedIntrv.replace(/^auto_/, '')
+                              const intervalOptionsIndex = timeIntervalOptions.findIndex(
+                                (item) => item.value === selectedIntrv
+                              );
+                              const intrv = selectedIntrv.replace(/^auto_/, '');
                               getCountVisualizations(intrv);
-                              selectedIntervalRef.current = timeIntervalOptions[intervalOptionsIndex]
+                              selectedIntervalRef.current =
+                                timeIntervalOptions[intervalOptionsIndex];
                               getPatterns(intrv, getErrorHandler('Error fetching patterns'));
                             }}
                             stateInterval={selectedIntervalRef.current?.value}
@@ -1008,7 +1011,9 @@ export const Explorer = ({
       rawVizData: explorerVisualizations,
       query,
       indexFields: explorerFields,
-      userConfigs: { ...userVizConfigs[curVisId] } || {},
+      userConfigs: !isEmpty(userVizConfigs[curVisId])
+        ? { ...userVizConfigs[curVisId] }
+        : { dataConfig: getDefaultVisConfig(queryManager.queryParser().parse(tempQuery).getStats()) },
       appData: { fromApp: appLogEvents },
       explorer: { explorerData, explorerFields, query, http, pplService },
     });
@@ -1361,7 +1366,9 @@ export const Explorer = ({
     setIsLiveTailOn(true);
     setToast('Live tail On', 'success');
     setIsLiveTailPopoverOpen(false);
-    setLiveTimestamp(dateMath.parse(endingTime, { roundUp: true })?.utc().format(DATE_PICKER_FORMAT) || '');
+    setLiveTimestamp(
+      dateMath.parse(endingTime, { roundUp: true })?.utc().format(DATE_PICKER_FORMAT) || ''
+    );
     setLiveHits(0);
     await sleep(2000);
     const curLiveTailname = liveTailNameRef.current;
