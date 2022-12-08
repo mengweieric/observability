@@ -13,3 +13,4 @@ export {
   formatError,
   getDefaultVisConfig
 } from './utils';
+export { TabTitle } from './widges';

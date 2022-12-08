@@ -14,6 +14,7 @@ import {
 } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
 import { NoResults } from './no_results';
+import classNames from 'classnames';
 
 export const ExplorerEvents = ({ configs, ...eventProps }: any) => {
   const {
@@ -29,12 +30,18 @@ export const ExplorerEvents = ({ configs, ...eventProps }: any) => {
   const {
     explorerData,
     countDistribution,
-    mainSectionClassName,
-    sidebarClassName,
     isLiveTailOn,
   } = eventProps;
 
   const [isSidebarClosed, setIsSidebarClosed] = useState(false);
+  const sidebarClassName = classNames({
+    closed: isSidebarClosed,
+  });
+
+  const mainSectionClassName = classNames({
+    'col-md-10': !isSidebarClosed,
+    'col-md-12': isSidebarClosed,
+  });
 
   return (
     <main className="container-fluid">

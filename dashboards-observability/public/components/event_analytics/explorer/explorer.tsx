@@ -16,7 +16,6 @@ import {
   EuiTabbedContentTab,
   EuiText,
 } from '@elastic/eui';
-import classNames from 'classnames';
 import { cloneDeep, has, isEmpty, isEqual, reduce } from 'lodash';
 import React, { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { batch, useDispatch, useSelector } from 'react-redux';
@@ -83,7 +82,7 @@ import {
   change as updateVizConfig,
   selectVisualizationConfig,
 } from '../redux/slices/viualization_config_slice';
-import { formatError, getDefaultVisConfig } from '../utils';
+import { formatError, getDefaultVisConfig, TabTitle } from '../utils';
 import { DataGrid } from './events_views/data_grid';
 import './explorer.scss';
 import { HitsCounter } from './hits_counter/hits_counter';
@@ -157,11 +156,9 @@ export const Explorer = ({
   const [curVisId, setCurVisId] = useState('bar');
   const [prevIndex, setPrevIndex] = useState('');
   const [isPanelTextFieldInvalid, setIsPanelTextFieldInvalid] = useState(false);
-  const [isSidebarClosed, setIsSidebarClosed] = useState(false);
   const [timeIntervalOptions, setTimeIntervalOptions] = useState(TIME_INTERVAL_OPTIONS);
   const [isOverridingTimestamp, setIsOverridingTimestamp] = useState(false);
   const [isOverridingPattern, setIsOverridingPattern] = useState(false);
-  const [isPatternConfigPopoverOpen, setIsPatternConfigPopoverOpen] = useState(false);
   const [patternRegexInput, setPatternRegexInput] = useState(PPL_DEFAULT_PATTERN_REGEX_FILETER);
   const [tempQuery, setTempQuery] = useState(query[RAW_QUERY]);
   const [isLiveTailPopoverOpen, setIsLiveTailPopoverOpen] = useState(false);
@@ -594,15 +591,6 @@ export const Explorer = ({
     });
   };
 
-  const sidebarClassName = classNames({
-    closed: isSidebarClosed,
-  });
-
-  const mainSectionClassName = classNames({
-    'col-md-10': !isSidebarClosed,
-    'col-md-12': isSidebarClosed,
-  });
-
   const handleOverrideTimestamp = async (timestamp: IField) => {
     const curQuery = queryRef.current;
     const rawQueryStr = buildQuery(appBaseQuery, curQuery![RAW_QUERY]);
@@ -611,9 +599,7 @@ export const Explorer = ({
       setToast('Cannot override timestamp because there was no valid index found.', 'danger');
       return;
     }
-
     setIsOverridingTimestamp(true);
-
     await dispatch(
       changeQuery({
         tabId,
@@ -622,7 +608,6 @@ export const Explorer = ({
         },
       })
     );
-
     setIsOverridingTimestamp(false);
     handleQuerySearch();
   };
@@ -673,28 +658,6 @@ export const Explorer = ({
     await handleTimeRangePickerRefresh(true);
   };
 
-  function getMainContentTab({
-    tabID,
-    tabTitle,
-    getContent,
-  }: {
-    tabID: string;
-    tabTitle: string;
-    getContent: () => JSX.Element;
-  }) {
-    return {
-      id: tabID,
-      name: (
-        <>
-          <EuiText data-test-subj={`${tabID}Tab`} size="s" textAlign="left" color="default">
-            <span className="tab-title">{tabTitle}</span>
-          </EuiText>
-        </>
-      ),
-      content: <>{getContent()}</>,
-    };
-  }
-
   const visualizations: IVisualizationContainerProps = useMemo(() => {
     return getVizContainerProps({
       vizId: curVisId,
@@ -718,25 +681,6 @@ export const Explorer = ({
     }
   };
 
-  const getExplorerVis = () => {
-    return (
-      <ExplorerVisualizations
-        query={query}
-        curVisId={curVisId}
-        setCurVisId={setCurVisId}
-        explorerFields={explorerFields}
-        explorerVis={explorerVisualizations}
-        explorerData={explorerData}
-        handleAddField={handleAddField}
-        handleRemoveField={handleRemoveField}
-        visualizations={visualizations}
-        handleOverrideTimestamp={handleOverrideTimestamp}
-        callback={callbackForConfig}
-        queryManager={queryManager}
-      />
-    );
-  };
-
   const handlePatternApply = async () => {
     await dispatch(
       changeQuery({
@@ -752,148 +696,166 @@ export const Explorer = ({
     );
   };
 
-  const EventPageConfigs = {
-    LeftSideBar: (
-      <Sidebar
-        query={query}
-        explorerFields={explorerFields}
-        explorerData={explorerData}
-        selectedTimestamp={query[SELECTED_TIMESTAMP]}
-        selectedPattern={query[SELECTED_PATTERN_FIELD]}
-        handleOverrideTimestamp={handleOverrideTimestamp}
-        handleOverridePattern={handleOverridePattern}
-        handleAddField={(field: IField) => handleAddField(field)}
-        handleRemoveField={(field: IField) => handleRemoveField(field)}
-        isOverridingTimestamp={isOverridingTimestamp}
-        isOverridingPattern={isOverridingPattern}
-        isFieldToggleButtonDisabled={
-          isEmpty(explorerData.jsonData) ||
-          !isEmpty(queryRef.current![RAW_QUERY].match(PPL_STATS_REGEX))
-        }
-      />
-    ),
-    HitsCounter: <HitsCounter hits={totalHits} showResetButton={false} onResetQuery={() => {}} />,
-    CountDistribution: <CountDistribution countDistribution={countDistribution} />,
-    TimechartHeader: (
-      <TimechartHeader
-        dateFormat={'MMM D, YYYY @ HH:mm:ss.SSS'}
-        options={timeIntervalOptions}
-        onChangeInterval={(selectedIntrv) => {
-          const intervalOptionsIndex = timeIntervalOptions.findIndex(
-            (item) => item.value === selectedIntrv
-          );
-          const intrv = selectedIntrv.replace(/^auto_/, '');
-          getCountVisualizations(intrv);
-          selectedIntervalRef.current = timeIntervalOptions[intervalOptionsIndex];
-          getPatterns(intrv, getErrorHandler('Error fetching patterns'));
-        }}
-        stateInterval={selectedIntervalRef.current?.value}
-      />
-    ),
-    EventView: (
-      <DataGrid
-        http={http}
-        pplService={pplService}
-        rows={explorerData.jsonData}
-        rowsAll={explorerData.jsonDataAll}
-        explorerFields={explorerFields}
-        timeStampField={queryRef.current![SELECTED_TIMESTAMP]}
-        rawQuery={appBasedRef.current || queryRef.current![RAW_QUERY]}
-      />
-    ),
-    PatternsTable: (
-      <>
-        {viewLogPatterns && (
-          <>
-            <PatternsTable
-              tableData={patternsData.patternTableData || []}
-              onPatternSelection={onPatternSelection}
-              tabId={tabId}
-              query={query}
-              isPatternLoading={isPatternLoading}
-            />
-            <EuiHorizontalRule margin="xs" />
-          </>
-        )}
-      </>
-    ),
-    LogPatternHeader: (
-      <LogPatternsHeader
-        viewLogPatterns={viewLogPatterns}
-        patternsData={patternsData}
-        patternRegexInput={patternRegexInput}
-        setPatternRegexInput={setPatternRegexInput}
-        onPatternSelection={onPatternSelection}
-        setViewLogPatterns={setViewLogPatterns}
-        onApply={handlePatternApply}
-      />
-    ),
-    LiveTailView: (
-      <>
-        {isLiveTailOnRef.current && (
-          <>
-            <EuiSpacer size="m" />
-            <EuiFlexGroup justifyContent="center" alignItems="center" gutterSize="m">
-              <EuiLoadingSpinner size="l" />
-              <EuiText textAlign="center" data-test-subj="LiveStreamIndicator_on">
-                <strong>&nbsp;&nbsp;Live streaming</strong>
-              </EuiText>
-              <EuiFlexItem grow={false}>
-                <HitsCounter hits={totalHits} showResetButton={false} onResetQuery={() => {}} />
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>since {liveTimestamp}</EuiFlexItem>
-            </EuiFlexGroup>
-            <EuiSpacer size="m" />
-          </>
-        )}
-      </>
-    ),
-  };
+  const eventPagePartsConfigs = useMemo(() => {
+    return {
+      LeftSideBar: (
+        <Sidebar
+          query={query}
+          explorerFields={explorerFields}
+          explorerData={explorerData}
+          selectedTimestamp={query[SELECTED_TIMESTAMP]}
+          selectedPattern={query[SELECTED_PATTERN_FIELD]}
+          handleOverrideTimestamp={handleOverrideTimestamp}
+          handleOverridePattern={handleOverridePattern}
+          handleAddField={(field: IField) => handleAddField(field)}
+          handleRemoveField={(field: IField) => handleRemoveField(field)}
+          isOverridingTimestamp={isOverridingTimestamp}
+          isOverridingPattern={isOverridingPattern}
+          isFieldToggleButtonDisabled={
+            isEmpty(explorerData.jsonData) ||
+            !isEmpty(queryRef.current![RAW_QUERY].match(PPL_STATS_REGEX))
+          }
+        />
+      ),
+      HitsCounter: <HitsCounter hits={totalHits} showResetButton={false} onResetQuery={() => {}} />,
+      CountDistribution: <CountDistribution countDistribution={countDistribution} />,
+      TimechartHeader: (
+        <TimechartHeader
+          dateFormat={'MMM D, YYYY @ HH:mm:ss.SSS'}
+          options={timeIntervalOptions}
+          onChangeInterval={(selectedIntrv) => {
+            const intervalOptionsIndex = timeIntervalOptions.findIndex(
+              (item) => item.value === selectedIntrv
+            );
+            const intrv = selectedIntrv.replace(/^auto_/, '');
+            getCountVisualizations(intrv);
+            selectedIntervalRef.current = timeIntervalOptions[intervalOptionsIndex];
+            getPatterns(intrv, getErrorHandler('Error fetching patterns'));
+          }}
+          stateInterval={selectedIntervalRef.current?.value}
+        />
+      ),
+      EventView: (
+        <DataGrid
+          http={http}
+          pplService={pplService}
+          rows={explorerData.jsonData}
+          rowsAll={explorerData.jsonDataAll}
+          explorerFields={explorerFields}
+          timeStampField={queryRef.current![SELECTED_TIMESTAMP]}
+          rawQuery={appBasedRef.current || queryRef.current![RAW_QUERY]}
+        />
+      ),
+      PatternsTable: (
+        <>
+          {viewLogPatterns && (
+            <>
+              <PatternsTable
+                tableData={patternsData.patternTableData || []}
+                onPatternSelection={onPatternSelection}
+                tabId={tabId}
+                query={query}
+                isPatternLoading={isPatternLoading}
+              />
+              <EuiHorizontalRule margin="xs" />
+            </>
+          )}
+        </>
+      ),
+      LogPatternHeader: (
+        <LogPatternsHeader
+          viewLogPatterns={viewLogPatterns}
+          patternsData={patternsData}
+          patternRegexInput={patternRegexInput}
+          setPatternRegexInput={setPatternRegexInput}
+          onPatternSelection={onPatternSelection}
+          setViewLogPatterns={setViewLogPatterns}
+          onApply={handlePatternApply}
+        />
+      ),
+      LiveTailView: (
+        <>
+          {isLiveTailOnRef.current && (
+            <>
+              <EuiSpacer size="m" />
+              <EuiFlexGroup justifyContent="center" alignItems="center" gutterSize="m">
+                <EuiLoadingSpinner size="l" />
+                <EuiText textAlign="center" data-test-subj="LiveStreamIndicator_on">
+                  <strong>&nbsp;&nbsp;Live streaming</strong>
+                </EuiText>
+                <EuiFlexItem grow={false}>
+                  <HitsCounter hits={totalHits} showResetButton={false} onResetQuery={() => {}} />
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>since {liveTimestamp}</EuiFlexItem>
+              </EuiFlexGroup>
+              <EuiSpacer size="m" />
+            </>
+          )}
+        </>
+      ),
+    };
+  }, [
+    tabId,
+    query,
+    explorerFields,
+    explorerData,
+    countDistribution,
+    viewLogPatterns,
+    patternsData,
+    patternRegexInput,
+    handlePatternApply,
+    setViewLogPatterns,
+    isPatternLoading,
+    onPatternSelection,
+    totalHits,
+    liveTimestamp
+  ]);
 
-  const getMainContentTabs = () => {
+  const memorizedMainContentTabs = useMemo(() => {
     return [
-      getMainContentTab({
-        tabID: TAB_EVENT_ID,
-        tabTitle: TAB_EVENT_TITLE,
-        getContent: () => (
+      {
+        id: TAB_EVENT_ID,
+        name: <TabTitle tabId={TAB_EVENT_ID} tabName={TAB_EVENT_TITLE} />,
+        content: (
           <ExplorerEvents
-            configs={EventPageConfigs}
+            configs={eventPagePartsConfigs}
             explorerData={explorerData}
             countDistribution={countDistribution}
-            mainSectionClassName={mainSectionClassName}
-            sidebarClassName={sidebarClassName}
             isLiveTailOn={isLiveTailOnRef.current}
           />
         ),
-      }),
-      getMainContentTab({
-        tabID: TAB_CHART_ID,
-        tabTitle: TAB_CHART_TITLE,
-        getContent: () => getExplorerVis(),
-      }),
+      },
+      {
+        id: TAB_CHART_ID,
+        name: <TabTitle tabId={TAB_CHART_ID} tabName={TAB_CHART_TITLE} />,
+        content: (
+          <ExplorerVisualizations
+            query={query}
+            curVisId={curVisId}
+            setCurVisId={setCurVisId}
+            explorerFields={explorerFields}
+            explorerVis={explorerVisualizations}
+            explorerData={explorerData}
+            handleAddField={handleAddField}
+            handleRemoveField={handleRemoveField}
+            visualizations={visualizations}
+            handleOverrideTimestamp={handleOverrideTimestamp}
+            callback={callbackForConfig}
+            queryManager={queryManager}
+          />
+        ),
+      },
     ];
-  };
-
-  const memorizedMainContentTabs = useMemo(() => {
-    return getMainContentTabs();
   }, [
     curVisId,
-    isPanelTextFieldInvalid,
     explorerData,
     explorerFields,
-    isSidebarClosed,
     countDistribution,
     explorerVisualizations,
-    selectedContentTabId,
-    isOverridingTimestamp,
     visualizations,
     query,
     isLiveTailOnRef.current,
-    patternsData,
-    viewLogPatterns,
-    isPatternConfigPopoverOpen,
-    patternRegexInput,
-    userVizConfigs,
+    eventPagePartsConfigs,
   ]);
 
   const handleContentTabClick = (selectedTab: IQueryTab) => setSelectedContentTab(selectedTab.id);
