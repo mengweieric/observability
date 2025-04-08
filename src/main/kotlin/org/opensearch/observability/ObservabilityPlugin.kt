@@ -5,7 +5,6 @@
 package org.opensearch.observability
 
 import org.opensearch.action.ActionRequest
-import org.opensearch.client.Client
 import org.opensearch.cluster.metadata.IndexNameExpressionResolver
 import org.opensearch.cluster.node.DiscoveryNodes
 import org.opensearch.cluster.service.ClusterService
@@ -19,6 +18,7 @@ import org.opensearch.core.common.io.stream.NamedWriteableRegistry
 import org.opensearch.core.xcontent.NamedXContentRegistry
 import org.opensearch.env.Environment
 import org.opensearch.env.NodeEnvironment
+import org.opensearch.indices.SystemIndexDescriptor
 import org.opensearch.observability.action.CreateObservabilityObjectAction
 import org.opensearch.observability.action.DeleteObservabilityObjectAction
 import org.opensearch.observability.action.GetObservabilityObjectAction
@@ -29,11 +29,13 @@ import org.opensearch.observability.resthandler.ObservabilityStatsRestHandler
 import org.opensearch.observability.settings.PluginSettings
 import org.opensearch.plugins.ActionPlugin
 import org.opensearch.plugins.Plugin
+import org.opensearch.plugins.SystemIndexPlugin
 import org.opensearch.repositories.RepositoriesService
 import org.opensearch.rest.RestController
 import org.opensearch.rest.RestHandler
 import org.opensearch.script.ScriptService
 import org.opensearch.threadpool.ThreadPool
+import org.opensearch.transport.client.Client
 import org.opensearch.watcher.ResourceWatcherService
 import java.util.function.Supplier
 
@@ -41,7 +43,7 @@ import java.util.function.Supplier
  * Entry point of the OpenSearch Observability plugin.
  * This class initializes the rest handlers.
  */
-class ObservabilityPlugin : Plugin(), ActionPlugin {
+class ObservabilityPlugin : Plugin(), ActionPlugin, SystemIndexPlugin {
 
     companion object {
         const val PLUGIN_NAME = "opensearch-observability"
@@ -55,6 +57,16 @@ class ObservabilityPlugin : Plugin(), ActionPlugin {
      */
     override fun getSettings(): List<Setting<*>> {
         return PluginSettings.getAllSettings()
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    override fun getSystemIndexDescriptors(settings: Settings): Collection<SystemIndexDescriptor> {
+        return listOf(
+            SystemIndexDescriptor(ObservabilityIndex.INDEX_NAME, "Observability Plugin Configuration index"),
+            SystemIndexDescriptor(ObservabilityIndex.NOTEBOOKS_INDEX_NAME, "Observability Plugin Notebooks index")
+        )
     }
 
     /**
